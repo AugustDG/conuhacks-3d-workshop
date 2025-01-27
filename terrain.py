@@ -4,8 +4,8 @@ WINDOW_WIDTH = 1600
 WINDOW_HEIGHT = 800
 
 # Create a window
-# pr.set_config_flags(pr.ConfigFlags.FLAG_WINDOW_RESIZABLE)
-pr.init_window(WINDOW_WIDTH, WINDOW_HEIGHT, "Hello World")
+pr.set_config_flags(pr.ConfigFlags.FLAG_WINDOW_RESIZABLE)
+pr.init_window(WINDOW_WIDTH, WINDOW_HEIGHT, "Terrain")
 pr.set_target_fps(60)
 
 # Create a 3D camera
@@ -17,10 +17,16 @@ camera = pr.Camera3D(
     pr.CameraProjection.CAMERA_PERSPECTIVE,
 )
 
-terrain_model = pr.load_model("resources/models/terrain_1.obj")
+camera_mode = pr.CameraMode.CAMERA_FREE
 
 fish_position = pr.Vector3(0.0, 0.0, 0.0)
 
+terrain_model = pr.load_model("resources/models/terrain_1.obj")
+terrain_texture = pr.load_texture("resources/textures/terrain_diffuse.png")
+terrain_model.materials.maps[pr.MaterialMapIndex.MATERIAL_MAP_ALBEDO].texture = terrain_texture
+
+def draw_terrain(position: pr.Vector3, scale=1.0, color=pr.WHITE):
+    pr.draw_model(terrain_model, position, scale, color)
 
 def draw_fish(position: pr.Vector3, scale=1.0, color=pr.BLUE):
     """Draws a simple voxel-like fish using cubes."""
@@ -48,36 +54,18 @@ def draw_fish(position: pr.Vector3, scale=1.0, color=pr.BLUE):
     pr.draw_cube(left_eye, scale * 0.2, scale * 0.2, scale * 0.2, pr.WHITE)
     pr.draw_cube(right_eye, scale * 0.2, scale * 0.2, scale * 0.2, pr.WHITE)
 
-
-def draw_terrain(position: pr.Vector3, scale=1.0, color=pr.GREEN):
-    pr.draw_model(terrain_model, position, scale, color)
-
-
 while not pr.window_should_close():
     # Input
-    if pr.is_key_pressed(pr.KeyboardKey.KEY_Z):
-        camera.position = pr.Vector3(5.0, 5.0, 5.0)
+    if pr.is_key_pressed(pr.KeyboardKey.KEY_TAB):
+        camera_mode += 1
+        camera_mode %= (pr.CameraMode.CAMERA_THIRD_PERSON + 1) # ensures we loop back when we hit the last option
 
-    # Updates
-    is_fish_movement_key_down = False
-
-    if pr.is_key_down(pr.KeyboardKey.KEY_W):
-        fish_position.x += 0.01
-        is_fish_movement_key_down = True
-    if pr.is_key_down(pr.KeyboardKey.KEY_S):
-        fish_position.x -= 0.01
-        is_fish_movement_key_down = True
-    if pr.is_key_down(pr.KeyboardKey.KEY_A):
-        fish_position.z -= 0.01
-        is_fish_movement_key_down = True
-    if pr.is_key_down(pr.KeyboardKey.KEY_D):
-        fish_position.z += 0.01
-        is_fish_movement_key_down = True
+        print(f"Camera mode changed to {camera_mode}.")
 
     if pr.is_mouse_button_down(pr.MouseButton.MOUSE_BUTTON_LEFT):
-        pr.update_camera_pro(camera, fish_position, [], 0.0)
+        pr.update_camera(camera, camera_mode)
 
-    camera.target = fish_position
+    # Updates
 
     # Drawing
     pr.begin_drawing()
@@ -92,8 +80,8 @@ while not pr.window_should_close():
     draw_terrain(
         position=pr.Vector3(0.0, -1.0, 0.0),
         scale=100.0,
-        color=pr.BEIGE,
     )
+
     draw_fish(
         position=fish_position,
         scale=1.0,
